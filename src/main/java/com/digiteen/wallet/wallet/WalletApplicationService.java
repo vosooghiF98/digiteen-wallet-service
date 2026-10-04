@@ -49,7 +49,7 @@ public class WalletApplicationService {
         wallet.credit(request.amount());
         WalletTransaction tx = saveSuccess(request.requestId(), TransactionType.DEPOSIT, wallet.getId(), null,
                 request.amount(), wallet.getBalance());
-        enqueueAfterCommit(tx);
+        enqueue(tx);
         log.info("deposit completed transactionId={} walletId={} amount={} balanceAfter={}",
                 tx.getId(), wallet.getId(), request.amount(), wallet.getBalance());
         return response(tx, false);
@@ -76,7 +76,7 @@ public class WalletApplicationService {
         wallet.debit(request.amount());
         WalletTransaction tx = saveSuccess(request.requestId(), TransactionType.WITHDRAW, wallet.getId(), null,
                 request.amount(), wallet.getBalance());
-        enqueueAfterCommit(tx);
+        enqueue(tx);
         log.info("withdraw completed transactionId={} walletId={} amount={} balanceAfter={}",
                 tx.getId(), wallet.getId(), request.amount(), wallet.getBalance());
         return response(tx, false);
@@ -113,7 +113,7 @@ public class WalletApplicationService {
         destination.credit(request.amount());
         WalletTransaction tx = saveSuccess(request.requestId(), TransactionType.TRANSFER,
                 source.getId(), destination.getId(), request.amount(), source.getBalance());
-        enqueueAfterCommit(tx);
+        enqueue(tx);
         log.info("transfer completed transactionId={} sourceWalletId={} destinationWalletId={} amount={} sourceBalanceAfter={}",
                 tx.getId(), source.getId(), destination.getId(), request.amount(), source.getBalance());
         return response(tx, false);
@@ -174,7 +174,9 @@ public class WalletApplicationService {
                 tx.getDestinationWalletId(), tx.getAmount(), tx.getTraceId(), Instant.now());
         try {
             String payload = objectMapper.writeValueAsString(event);
-            outbox.save(new OutboxEvent(eventId, tx.getId(), "TRANSACTION_COMPLETED", payload, tx.getTraceId(), Instant.now()));
+            System.out.println("payload {}" + payload);
+            OutboxEvent outboxEvent = outbox.save(new OutboxEvent(eventId, tx.getId(), "TRANSACTION_COMPLETED", payload, tx.getTraceId(), Instant.now()));
+            System.out.println("outboxEvent {}" + outboxEvent);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("cannot serialize transaction event", e);
         }
@@ -183,18 +185,5 @@ public class WalletApplicationService {
     private static WalletCommandResponse response(WalletTransaction tx, boolean duplicate) {
         return new WalletCommandResponse(tx.getId(), tx.getRequestId(), tx.getType(), tx.getStatus(),
                 tx.getAmount(), tx.getBalanceAfter(), duplicate);
-    }
-
-    private void enqueueAfterCommit(WalletTransaction tx) {
-
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-
-                    @Override
-                    public void afterCommit() {
-                        enqueue(tx);
-                    }
-                }
-        );
     }
 }

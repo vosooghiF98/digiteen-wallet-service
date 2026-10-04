@@ -10,7 +10,7 @@
     <groupId>com.digiteen</groupId>
     <version>1.0.0</version>
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <jjwt.version>0.12.6</jjwt.version>
         <logstash.version>8.0</logstash.version>
     </properties>

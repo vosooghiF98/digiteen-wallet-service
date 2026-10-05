@@ -36,11 +36,10 @@ public class AuthService {
     public RegisterResponse register(RegisterRequest request) {
         String email = request.email().trim().toLowerCase(Locale.ROOT);
         if (users.existsByEmailIgnoreCase(email)) throw new ConflictException("email is already registered");
-        Instant now = Instant.now();
         UserEntity user = new UserEntity(UUID.randomUUID(), request.name().trim(), email,
-                request.phone(), passwordEncoder.encode(request.password()), now);
+                request.phone(), passwordEncoder.encode(request.password()));
         users.save(user);
-        Wallet wallet = wallets.save(new Wallet(UUID.randomUUID(), user, now));
+        Wallet wallet = wallets.save(new Wallet(UUID.randomUUID(), user));
         log.info("user registered userId={} walletId={}", user.getId(), wallet.getId());
         return new RegisterResponse(user.getId(), wallet.getId(), user.getEmail());
     }

@@ -12,25 +12,27 @@ import java.util.UUID;
 public class Wallet {
     @Id
     private UUID id;
+
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private UserEntity user;
+
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal balance;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     protected Wallet() {
     }
 
-    public Wallet(UUID id, UserEntity user, Instant now) {
+    public Wallet(UUID id, UserEntity user) {
         this.id = id;
         this.user = user;
         this.balance = BigDecimal.ZERO.setScale(2);
-        this.createdAt = now;
-        this.updatedAt = now;
     }
 
     public void credit(BigDecimal amount) {
@@ -70,5 +72,17 @@ public class Wallet {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        Instant now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = Instant.now();
     }
 }

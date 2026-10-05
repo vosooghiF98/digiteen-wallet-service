@@ -9,8 +9,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class WalletTest {
     private Wallet wallet() {
-        UserEntity user = new UserEntity(UUID.randomUUID(), "Test", "test@example.com", null, "hash", Instant.now());
-        return new Wallet(UUID.randomUUID(), user, Instant.now());
+        UserEntity user = new UserEntity(UUID.randomUUID(), "Test", "test@example.com", null, "hash");
+        return new Wallet(UUID.randomUUID(), user);
     }
 
     @Test

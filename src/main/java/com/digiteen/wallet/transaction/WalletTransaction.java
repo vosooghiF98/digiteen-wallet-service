@@ -11,28 +11,39 @@ import java.util.UUID;
 public class WalletTransaction {
     @Id
     private UUID id;
+
     @Column(name = "request_id", nullable = false, unique = true)
     private UUID requestId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private TransactionType type;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private TransactionStatus status;
+
     @Column(name = "source_wallet_id")
     private UUID sourceWalletId;
+
     @Column(name = "destination_wallet_id")
     private UUID destinationWalletId;
+
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
+
     @Column(name = "balance_after", precision = 19, scale = 2)
     private BigDecimal balanceAfter;
+
     @Column(name = "trace_id", nullable = false, length = 100)
     private String traceId;
+
     @Column(name = "failure_reason", length = 500)
     private String failureReason;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
     @Column(name = "completed_at")
     private Instant completedAt;
 
@@ -52,7 +63,6 @@ public class WalletTransaction {
         tx.amount = amount;
         tx.balanceAfter = balanceAfter;
         tx.traceId = traceId;
-        tx.createdAt = now;
         tx.completedAt = now;
         return tx;
     }
@@ -112,5 +122,10 @@ public class WalletTransaction {
 
     public Instant getCompletedAt() {
         return completedAt;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = Instant.now();
     }
 }

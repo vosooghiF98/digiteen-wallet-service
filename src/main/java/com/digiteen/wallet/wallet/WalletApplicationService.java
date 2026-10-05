@@ -14,8 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -88,10 +86,19 @@ public class WalletApplicationService {
         if (sourceWalletId.equals(request.destinationWalletId())) {
             throw new IllegalArgumentException("source and destination wallets must differ");
         }
+        // lock ordering to prevent deadlock
+        UUID destinationWalletId = request.destinationWalletId();
 
-        UUID firstId = sourceWalletId.compareTo(request.destinationWalletId()) <= 0
-                ? sourceWalletId : request.destinationWalletId();
-        UUID secondId = firstId.equals(sourceWalletId) ? request.destinationWalletId() : sourceWalletId;
+        UUID firstId;
+        UUID secondId;
+
+        if (sourceWalletId.compareTo(destinationWalletId) <= 0) {
+            firstId = sourceWalletId;
+            secondId = destinationWalletId;
+        } else {
+            firstId = destinationWalletId;
+            secondId = sourceWalletId;
+        }
         Wallet first = lock(firstId);
         Wallet second = lock(secondId);
         Wallet source = first.getId().equals(sourceWalletId) ? first : second;
@@ -128,10 +135,7 @@ public class WalletApplicationService {
     @Transactional(readOnly = true)
     public List<TransactionHistoryItem> history(String email) {
         UUID walletId = ownWallet(email).getId();
-        return transactions.findHistory(walletId).stream().map(t -> new TransactionHistoryItem(
-                t.getId(), t.getRequestId(), t.getType(), t.getStatus(), t.getSourceWalletId(),
-                t.getDestinationWalletId(), t.getAmount(), t.getBalanceAfter(), t.getTraceId(),
-                t.getFailureReason(), t.getCreatedAt())).toList();
+        return transactions.findHistory(walletId);
     }
 
     private Wallet ownWallet(String email) {
@@ -174,9 +178,7 @@ public class WalletApplicationService {
                 tx.getDestinationWalletId(), tx.getAmount(), tx.getTraceId(), Instant.now());
         try {
             String payload = objectMapper.writeValueAsString(event);
-            System.out.println("payload {}" + payload);
-            OutboxEvent outboxEvent = outbox.save(new OutboxEvent(eventId, tx.getId(), "TRANSACTION_COMPLETED", payload, tx.getTraceId(), Instant.now()));
-            System.out.println("outboxEvent {}" + outboxEvent);
+            outbox.save(new OutboxEvent(eventId, tx.getId(), "TRANSACTION_COMPLETED", payload, tx.getTraceId()));
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("cannot serialize transaction event", e);
         }

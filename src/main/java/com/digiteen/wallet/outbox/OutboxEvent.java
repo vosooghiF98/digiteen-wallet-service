@@ -10,31 +10,37 @@ import java.util.UUID;
 public class OutboxEvent {
     @Id
     private UUID id;
+
     @Column(name = "aggregate_id", nullable = false)
     private UUID aggregateId;
+
     @Column(name = "event_type", nullable = false, length = 100)
     private String eventType;
+
     @Column(nullable = false, columnDefinition = "text")
     private String payload;
+
     @Column(name = "trace_id", nullable = false, length = 100)
     private String traceId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
     @Column(name = "published_at")
     private Instant publishedAt;
+
     @Column(nullable = false)
     private int attempts;
 
     protected OutboxEvent() {
     }
 
-    public OutboxEvent(UUID id, UUID aggregateId, String eventType, String payload, String traceId, Instant createdAt) {
+    public OutboxEvent(UUID id, UUID aggregateId, String eventType, String payload, String traceId) {
         this.id = id;
         this.aggregateId = aggregateId;
         this.eventType = eventType;
         this.payload = payload;
         this.traceId = traceId;
-        this.createdAt = createdAt;
         this.attempts = 0;
     }
 
@@ -77,4 +83,10 @@ public class OutboxEvent {
     public int getAttempts() {
         return attempts;
     }
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = Instant.now();
+    }
+
 }
